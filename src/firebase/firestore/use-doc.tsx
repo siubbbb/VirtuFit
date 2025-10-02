@@ -57,7 +57,7 @@ export function useDoc<T = any>(
   useEffect(() => {
     // If the user is still loading OR the docRef is not provided, we are not ready to fetch.
     if (isUserLoading || !memoizedDocRef) {
-      setIsLoading(false);
+      setIsLoading(isUserLoading); // Reflect the user loading state
       setData(null);
       setError(null);
       return;

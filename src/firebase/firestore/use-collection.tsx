@@ -66,7 +66,7 @@ export function useCollection<T = any>(
   useEffect(() => {
     // Don't fetch if the user is loading or the query isn't ready.
     if (isUserLoading || !memoizedTargetRefOrQuery) {
-      setIsLoading(false);
+      setIsLoading(isUserLoading); // Reflect the user loading state
       setData(null);
       setError(null);
       return;

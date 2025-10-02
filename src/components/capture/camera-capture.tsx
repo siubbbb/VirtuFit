@@ -6,7 +6,7 @@ import { Camera, Loader2, PersonStanding, Check, RefreshCw, AlertTriangle, Arrow
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { generateAvatar } from '@/ai/flows/generate-avatar';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useUser, useFirestore, setDocumentNonBlocking } from '@/firebase';
 import { doc, serverTimestamp } from 'firebase/firestore';
 
@@ -26,6 +26,7 @@ export function CameraCapture() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     async function setupCamera() {
@@ -86,12 +87,16 @@ export function CameraCapture() {
   };
   
   const handleGenerateAvatar = () => {
+    // The session ID from the QR code is used to identify the user on desktop
+    const sessionId = searchParams.get('session');
+    const targetUserId = sessionId || user?.uid;
+
     if (!frontPhoto) {
         toast({ variant: 'destructive', title: 'Missing photo' });
         return;
     }
-    if (!user) {
-        toast({ variant: 'destructive', title: 'You must be signed in' });
+    if (!targetUserId) {
+        toast({ variant: 'destructive', title: 'Could not identify user session.' });
         return;
     }
     
@@ -100,10 +105,8 @@ export function CameraCapture() {
         try {
             const { avatarDataUri } = await generateAvatar({ photoDataUri: frontPhoto });
 
-            // ** Firestore Integration **
-            const userDocRef = doc(firestore, 'users', user.uid);
+            const userDocRef = doc(firestore, 'users', targetUserId);
             
-            // For now, let's create some mock measurement data
             const mockMeasurements = {
               chest: Math.round(90 + Math.random() * 20),
               waist: Math.round(75 + Math.random() * 20),
@@ -119,15 +122,26 @@ export function CameraCapture() {
                 updatedAt: serverTimestamp(),
             }, { merge: true });
 
-            // We don't need to await the above non-blocking call.
-            // Let's add a small delay to make the UI transition feel smoother.
+            // Small delay for UI smoothness
             await new Promise(resolve => setTimeout(resolve, 1500));
 
             toast({
                 title: 'Avatar Generated!',
                 description: 'Your avatar and measurements have been saved.',
             });
-            router.push('/dashboard');
+
+            if(sessionId) {
+              // If this was a QR code session, the user is on mobile and doesn't
+              // need to be redirected. The desktop will handle it.
+              // We can show a simple success message.
+              document.body.innerHTML = `<div style="display:flex; flex-direction: column; align-items:center; justify-content:center; height:100vh; font-family:sans-serif; background-color: #f0f9ff; color: #0c4a6e;">
+                  <h1 style="font-size: 24px; font-weight: 600;">Success!</h1>
+                  <p style="margin-top: 8px;">You can now return to your desktop.</p>
+                </div>`;
+            } else {
+               router.push('/dashboard');
+            }
+
         } catch(error) {
             console.error("Avatar generation failed", error);
             setStep('error');
@@ -153,25 +167,29 @@ export function CameraCapture() {
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <div className="relative w-full max-w-md aspect-[9/16] bg-muted rounded-lg overflow-hidden flex items-center justify-center">
-        {step !== 'front-captured' ? (
-          <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-cover" />
-        ) : (
-          frontPhoto && <Image src={frontPhoto} alt="Captured photo" layout="fill" objectFit="cover" />
-        )}
-        
-        {step === 'front-guide' && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <PersonStanding className="w-4/5 h-4/5 text-white/20" strokeWidth={1}/>
-            </div>
-        )}
-        {!isCameraReady && step !== 'error' && step !== 'processing' && (
-            <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-2">
-                <Loader2 className="animate-spin h-8 w-8 text-primary"/>
-                <p className="text-muted-foreground">Starting camera...</p>
-            </div>
-        )}
-      </div>
+      <Card className="shadow-lg overflow-hidden w-full max-w-md">
+        <CardContent className="p-0">
+          <div className="relative w-full aspect-[9/16] bg-muted flex items-center justify-center">
+            {step !== 'front-captured' ? (
+              <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-cover" />
+            ) : (
+              frontPhoto && <Image src={frontPhoto} alt="Captured photo" layout="fill" objectFit="cover" />
+            )}
+            
+            {step === 'front-guide' && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <PersonStanding className="w-4/5 h-4/5 text-white/20" strokeWidth={1}/>
+                </div>
+            )}
+            {!isCameraReady && step !== 'error' && step !== 'processing' && (
+                <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-2">
+                    <Loader2 className="animate-spin h-8 w-8 text-primary"/>
+                    <p className="text-muted-foreground">Starting camera...</p>
+                </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
       
       <p className="text-center text-muted-foreground min-h-[40px]">{getGuideText()}</p>
       

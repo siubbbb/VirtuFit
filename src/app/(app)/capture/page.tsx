@@ -1,36 +1,53 @@
+'use client';
+
+import { useIsMobile } from '@/hooks/use-mobile';
 import { CameraCapture } from '@/components/capture/camera-capture';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, Smartphone } from 'lucide-react';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { QrCodeFlow } from '@/components/capture/qr-code-flow';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useEffect, useState } from 'react';
 
 export default function CapturePage() {
-  return (
-    <div className="max-w-4xl mx-auto">
-      <header className="mb-8 text-center">
-        <h1 className="text-4xl font-bold font-headline">Get Measured</h1>
-        <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-          Follow the simple steps below to create your 2D avatar and extract your body measurements using your device's camera.
-        </p>
-      </header>
+  const isMobile = useIsMobile();
+  const [isClient, setIsClient] = useState(false);
 
-      <Alert className="mb-8 bg-secondary/50">
-          <Smartphone className="h-4 w-4"/>
-          <AlertTitle>Mobile Experience</AlertTitle>
-          <AlertDescription>
-            For the best experience, this capture process is designed for mobile devices. In a real-world scenario, you would be guided here via a QR code from your desktop.
-          </AlertDescription>
-      </Alert>
+  useEffect(() => {
+    // This ensures we don't have a server/client mismatch on the `isMobile` value.
+    setIsClient(true);
+  }, []);
 
-      <Card className="shadow-lg overflow-hidden">
-        <CardHeader>
-            <CardTitle>Live Camera Capture</CardTitle>
-            <CardDescription>Position yourself within the guide for an accurate capture.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <CameraCapture />
-        </CardContent>
-      </Card>
+  const renderContent = () => {
+    if (!isClient) {
+      // Render a skeleton loader on the server and during initial client render
+      // to avoid flash of incorrect content.
+      return (
+        <div className="max-w-4xl mx-auto">
+           <header className="mb-8 text-center">
+             <Skeleton className="h-10 w-3/4 mx-auto" />
+             <Skeleton className="h-6 w-1/2 mx-auto mt-4" />
+           </header>
+           <div className="flex justify-center">
+            <Skeleton className="h-[50vh] w-full max-w-md" />
+           </div>
+        </div>
+      )
+    }
 
-    </div>
-  );
+    if (isMobile) {
+      return (
+        <div className="max-w-4xl mx-auto">
+          <header className="mb-8 text-center">
+            <h1 className="text-4xl font-bold font-headline">Get Measured</h1>
+            <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
+              Follow the simple steps below to create your 2D avatar and extract your body measurements using your device's camera.
+            </p>
+          </header>
+          <CameraCapture />
+        </div>
+      );
+    }
+
+    return <QrCodeFlow />;
+  };
+
+  return <div className="p-4 sm:p-6 lg:p-8">{renderContent()}</div>;
 }

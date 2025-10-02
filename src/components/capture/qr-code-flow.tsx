@@ -1,10 +1,9 @@
-
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import QRCode from 'qrcode.react';
 import { useUser } from '@/firebase';
-import { Smartphone, CheckCircle, Loader2 } from 'lucide-react';
+import { Smartphone, CheckCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '../ui/skeleton';
 
@@ -75,14 +74,6 @@ export function QrCodeFlow({ isComplete }: QrCodeFlowProps) {
                 <p className="font-semibold text-foreground">All Set!</p>
                 <p className="text-sm text-muted-foreground">Redirecting...</p>
               </div>
-            )}
-             {!isComplete && !isLoading && (
-                 <div className="absolute inset-0 bg-transparent flex flex-col items-center justify-center gap-2 rounded-lg text-center pointer-events-none">
-                    <div className="animate-pulse">
-                        <Loader2 className="w-12 h-12 text-primary/50" />
-                    </div>
-                    <p className="mt-2 font-semibold text-muted-foreground">Waiting for capture...</p>
-                </div>
             )}
           </div>
         </CardContent>

@@ -1,51 +1,35 @@
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import QRCode from 'qrcode.react';
-import { useUser, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, getFirestore } from 'firebase/firestore';
+import { useUser } from '@/firebase';
 import { Smartphone, CheckCircle, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { useRouter } from 'next/navigation';
 import { Skeleton } from '../ui/skeleton';
 
-export function QrCodeFlow() {
+type QrCodeFlowProps = {
+  isComplete: boolean;
+};
+
+export function QrCodeFlow({ isComplete }: QrCodeFlowProps) {
   const { user, isUserLoading } = useUser();
-  const router = useRouter();
   const [origin, setOrigin] = useState('');
 
-  // This effect runs only once on the client after the component mounts
+  // This effect runs only once on the client to safely get the window.location.origin
   useEffect(() => {
-    // This code will only run in the browser, safely accessing window.location.origin
     setOrigin(window.location.origin);
-  }, []);
-
-  const userProfileRef = useMemoFirebase(
-    () => (user ? doc(getFirestore(), 'users', user.uid) : null),
-    [user]
-  );
-
-  // This hook listens for the avatarUrl to be added to the user's profile
-  const { data: userProfile } = useDoc(userProfileRef, {
-    listen: true // Ensure we are listening for real-time updates
-  });
-
-  useEffect(() => {
-    if (userProfile?.avatarUrl) {
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 2000);
-    }
-  }, [userProfile?.avatarUrl, router]);
+  }, []); // Empty dependency array ensures this runs only once on mount
   
   const qrUrl = useMemo(() => {
+    // The URL for the QR code depends on having the user's ID and the website's origin URL
     if (!origin || !user) return '';
     return `${origin}/capture?session=${user.uid}`;
   }, [origin, user]);
 
-  // The main loading state ONLY depends on getting the user and the origin.
+  // The loading state is now very simple: we are loading if Firebase Auth is still checking the user,
+  // or if we haven't determined the origin URL on the client yet.
   const isLoading = isUserLoading || !origin;
-  const isComplete = !!userProfile?.avatarUrl;
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -92,7 +76,7 @@ export function QrCodeFlow() {
                 <p className="text-sm text-muted-foreground">Redirecting...</p>
               </div>
             )}
-             {!isLoading && !isComplete && (
+             {!isComplete && !isLoading && (
                  <div className="absolute inset-0 bg-transparent flex flex-col items-center justify-center gap-2 rounded-lg text-center pointer-events-none">
                     <div className="animate-pulse">
                         <Loader2 className="w-12 h-12 text-primary/50" />

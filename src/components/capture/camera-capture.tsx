@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Camera, Loader2, PersonStanding, Check, RefreshCw, AlertTriangle, ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';

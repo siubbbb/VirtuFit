@@ -15,8 +15,8 @@ export function QrCodeFlow({ isComplete }: QrCodeFlowProps) {
   const { user, isUserLoading } = useUser();
   const [origin, setOrigin] = useState('');
 
-  // This effect runs only once on the client to safely get the window.location.origin
   useEffect(() => {
+    // This effect runs only once on the client to safely get the window.location.origin
     setOrigin(window.location.origin);
   }, []); // Empty dependency array ensures this runs only once on mount
   
@@ -60,8 +60,8 @@ export function QrCodeFlow({ isComplete }: QrCodeFlowProps) {
               <QRCode
                 value={qrUrl}
                 size={192}
-                bgColor="hsl(var(--background))"
-                fgColor="hsl(var(--foreground))"
+                bgColor="#FFFFFF"
+                fgColor="#000000"
                 level="Q"
                 includeMargin={false}
                 className="rounded-lg"

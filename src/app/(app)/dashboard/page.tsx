@@ -102,21 +102,6 @@ export default function DashboardPage() {
                         </ol>
                     </CardContent>
                 </Card>
-                <Card className="bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-shadow duration-300">
-                    <CardHeader>
-                        <CardTitle className="text-xl font-headline">Your Privacy Matters</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                       <p className="text-sm">
-                            Your data is yours. All measurements and photos are securely processed and can be deleted from your account at any time.
-                       </p>
-                    </CardContent>
-                    <CardFooter>
-                        <Button asChild variant="secondary" size="sm">
-                            <Link href="/account">Manage Account</Link>
-                        </Button>
-                    </CardFooter>
-                </Card>
             </div>
 
         </div>

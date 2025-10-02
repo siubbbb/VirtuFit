@@ -43,7 +43,7 @@ export function QrCodeFlow() {
     return `${origin}/capture?session=${user.uid}`;
   }, [origin, user]);
 
-  const isLoading = isUserLoading || isProfileLoading;
+  const isQrLoading = isUserLoading || !origin;
   const isComplete = !!userProfile?.avatarUrl;
 
   return (
@@ -70,9 +70,9 @@ export function QrCodeFlow() {
              </ol>
           </div>
           <div className="relative w-48 h-48 flex items-center justify-center">
-            {isLoading && <Skeleton className="w-full h-full" />}
+            {isQrLoading && <Skeleton className="w-full h-full" />}
             
-            {!isLoading && qrUrl && (
+            {!isQrLoading && qrUrl && (
                <QRCode
                  value={qrUrl}
                  size={192}
@@ -92,7 +92,7 @@ export function QrCodeFlow() {
                 </div>
             )}
 
-             {!isComplete && !isLoading && (
+             {!isComplete && !isQrLoading && (
                  <div className="absolute inset-0 bg-transparent flex flex-col items-center justify-center gap-2 rounded-lg text-center pointer-events-none">
                     <div className="animate-pulse">
                         <Loader2 className="w-12 h-12 text-primary/50" />

@@ -80,7 +80,7 @@ export default function CapturePage() {
     }
     
     // On desktop (no 'session' param), show the QR code flow.
-    return <QrCodeFlow isComplete={!!userProfile?.avatarUrl} />;
+    return <QrCodeFlow />;
   };
 
   return <div className="p-4 sm:p-6 lg:p-8">{renderContent()}</div>;

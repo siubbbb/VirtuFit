@@ -3,31 +3,25 @@
 import { useEffect, useMemo, useState } from 'react';
 import QRCode from 'qrcode.react';
 import { useUser } from '@/firebase';
-import { Smartphone, CheckCircle } from 'lucide-react';
+import { Smartphone } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '../ui/skeleton';
 
-type QrCodeFlowProps = {
-  isComplete: boolean;
-};
-
-export function QrCodeFlow({ isComplete }: QrCodeFlowProps) {
+export function QrCodeFlow() {
   const { user, isUserLoading } = useUser();
   const [origin, setOrigin] = useState('');
 
+  // This effect runs only once on the client after the component mounts
   useEffect(() => {
-    // This effect runs only once on the client to safely get the window.location.origin
     setOrigin(window.location.origin);
   }, []); // Empty dependency array ensures this runs only once on mount
-  
+
   const qrUrl = useMemo(() => {
-    // The URL for the QR code depends on having the user's ID and the website's origin URL
     if (!origin || !user) return '';
     return `${origin}/capture?session=${user.uid}`;
   }, [origin, user]);
 
-  // The loading state is now very simple: we are loading if Firebase Auth is still checking the user,
-  // or if we haven't determined the origin URL on the client yet.
+  // The main loading state ONLY depends on getting the user and the origin.
   const isLoading = isUserLoading || !origin;
 
   return (
@@ -54,26 +48,20 @@ export function QrCodeFlow({ isComplete }: QrCodeFlowProps) {
             </ol>
           </div>
           <div className="relative w-48 h-48 flex items-center justify-center">
-            {isLoading && <Skeleton className="w-full h-full" />}
-            
-            {!isLoading && qrUrl && !isComplete && (
-              <QRCode
-                value={qrUrl}
-                size={192}
-                bgColor="#FFFFFF"
-                fgColor="#000000"
-                level="Q"
-                includeMargin={false}
-                className="rounded-lg"
-              />
-            )}
-
-            {isComplete && (
-              <div className="absolute inset-0 bg-background/90 flex flex-col items-center justify-center gap-2 rounded-lg text-center">
-                <CheckCircle className="w-16 h-16 text-green-500 animate-in zoom-in-50" />
-                <p className="font-semibold text-foreground">All Set!</p>
-                <p className="text-sm text-muted-foreground">Redirecting...</p>
-              </div>
+            {isLoading ? (
+              <Skeleton className="w-full h-full" />
+            ) : (
+              qrUrl && (
+                <QRCode
+                  value={qrUrl}
+                  size={192}
+                  bgColor="#FFFFFF"
+                  fgColor="#000000"
+                  level="Q"
+                  includeMargin={false}
+                  className="rounded-lg"
+                />
+              )
             )}
           </div>
         </CardContent>

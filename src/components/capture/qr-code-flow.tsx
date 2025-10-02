@@ -24,6 +24,7 @@ export function QrCodeFlow() {
   );
 
   // This hook listens for the avatarUrl to be added to the user's profile
+  // It runs in the background and does not block the initial QR code render.
   const { data: userProfile } = useDoc(userProfileRef, {
     listen: true // Ensure we are listening for real-time updates
   });
@@ -41,6 +42,7 @@ export function QrCodeFlow() {
     return `${origin}/capture?session=${user.uid}`;
   }, [origin, user]);
 
+  // The main loading state ONLY depends on getting the user and the origin.
   const isLoading = isUserLoading || !origin;
   const isComplete = !!userProfile?.avatarUrl;
 

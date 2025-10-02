@@ -43,6 +43,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { user, isUserLoading } = useUser();
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('sign-in');
   
   const signUpForm = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
@@ -62,25 +63,20 @@ export default function LoginPage() {
 
   const handleSignUp = async (values: z.infer<typeof signUpSchema>) => {
     setIsLoading(true);
-    try {
-      initiateEmailSignUp(auth, values.email, values.password);
-      // The onAuthStateChanged listener in the provider will handle the redirect
-    } catch (error) {
-      console.error('Sign up error', error);
-      setIsLoading(false);
-    }
+    initiateEmailSignUp(auth, values.email, values.password);
   };
 
   const handleSignIn = async (values: z.infer<typeof signInSchema>) => {
     setIsLoading(true);
-    try {
-      initiateEmailSignIn(auth, values.email, values.password);
-      // The onAuthStateChanged listener will handle the redirect
-    } catch (error) {
-      console.error('Sign in error', error);
-      setIsLoading(false);
-    }
+    initiateEmailSignIn(auth, values.email, values.password);
   };
+
+  const onTabChange = (value: string) => {
+    setActiveTab(value);
+    setIsLoading(false); 
+    signInForm.clearErrors();
+    signUpForm.clearErrors();
+  }
   
   if (isUserLoading || user) {
      return (
@@ -96,7 +92,7 @@ export default function LoginPage() {
       <div className='absolute top-8 left-8'>
         <Logo />
       </div>
-      <Tabs defaultValue="sign-in" className="w-full max-w-sm">
+      <Tabs value={activeTab} onValueChange={onTabChange} className="w-full max-w-sm">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="sign-in">Sign In</TabsTrigger>
           <TabsTrigger value="sign-up">Sign Up</TabsTrigger>

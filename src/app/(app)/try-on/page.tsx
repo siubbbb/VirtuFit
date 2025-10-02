@@ -10,16 +10,16 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
 export default function TryOnPage() {
-  const { user, isUserLoading } = useUser();
+  const { user } = useUser(); // AppLayout guarantees user is loaded
   const firestore = useFirestore();
 
   const userProfileRef = useMemoFirebase(
-    () => (user ? doc(firestore, 'users', user.uid) : null),
+    () => doc(firestore, 'users', user!.uid),
     [user, firestore]
   );
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef, { listen: false });
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
 
-  const isLoading = isUserLoading || (user && isProfileLoading);
+  const isLoading = isProfileLoading;
   
   const userClientData = userProfile ? {
     avatarUrl: userProfile.avatarUrl,
@@ -54,7 +54,7 @@ export default function TryOnPage() {
         </Alert>
       )}
       
-      {!isLoading && userClientData?.avatarUrl && (
+      {!isLoading && userClientData?.avatarUrl && userClientData?.measurements && (
         <TryOnClient
           user={userClientData}
           getFitRecommendationAction={getFitRecommendation}

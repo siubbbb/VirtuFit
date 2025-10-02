@@ -30,18 +30,16 @@ export interface UseDocOptions {
 }
 
 /**
- * React hook to subscribe to a single Firestore document in real-time.
- * Handles nullable references.
- * 
- * IMPORTANT! YOU MUST MEMOIZE the inputted memoizedTargetRefOrQuery or BAD THINGS WILL HAPPEN
- * use useMemo to memoize it per React guidence.  Also make sure that it's dependencies are stable
- * references
+ * React hook to subscribe to a single Firestore document.
+ * Handles nullable references safely.
  *
+ * IMPORTANT: You MUST memoize the 'docRef' passed to this hook using 'useMemo' or 'useMemoFirebase'.
+ * Failure to do so will result in infinite re-renders.
  *
- * @template T Optional type for document data. Defaults to any.
- * @param {DocumentReference<DocumentData> | null | undefined} docRef -
- * The Firestore DocumentReference. Waits if null/undefined.
- * @returns {UseDocResult<T>} Object with data, isLoading, error.
+ * @template T Type of the document data.
+ * @param {DocumentReference<DocumentData> | null | undefined} memoizedDocRef - The memoized Firestore DocumentReference.
+ * @param {UseDocOptions} options - Options for the hook, like whether to listen for real-time updates.
+ * @returns {UseDocResult<T>} Object with data, isLoading, and error.
  */
 export function useDoc<T = any>(
   memoizedDocRef: DocumentReference<DocumentData> | null | undefined,
@@ -50,19 +48,19 @@ export function useDoc<T = any>(
   type StateDataType = WithId<T> | null;
 
   const [data, setData] = useState<StateDataType>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true); // Start as true
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
   useEffect(() => {
+    // If the docRef is not provided, we are not ready to fetch.
     if (!memoizedDocRef) {
+      setIsLoading(false);
       setData(null);
-      setIsLoading(false); // Not loading if there's no ref
       setError(null);
       return;
     }
 
     setIsLoading(true);
-    setError(null);
 
     if (options.listen) {
       const unsubscribe = onSnapshot(
@@ -76,7 +74,7 @@ export function useDoc<T = any>(
           setError(null);
           setIsLoading(false);
         },
-        (error: FirestoreError) => {
+        (err: FirestoreError) => {
           const contextualError = new FirestorePermissionError({
             operation: 'get',
             path: memoizedDocRef.path,
@@ -97,7 +95,7 @@ export function useDoc<T = any>(
         }
         setError(null);
         setIsLoading(false);
-      }).catch((error: FirestoreError) => {
+      }).catch((err: FirestoreError) => {
          const contextualError = new FirestorePermissionError({
             operation: 'get',
             path: memoizedDocRef.path,

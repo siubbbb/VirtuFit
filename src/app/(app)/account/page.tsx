@@ -31,7 +31,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { useUser, setDocumentNonBlocking, useFirestore, useMemoFirebase, useDoc } from '@/firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
-import { useState, useEffect, useTransition, useMemo } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -39,7 +39,7 @@ import { useRouter } from 'next/navigation';
 type Gender = "male" | "female" | "other";
 
 export default function AccountPage() {
-  const { user, isUserLoading } = useUser();
+  const { user } = useUser(); // AppLayout guarantees user is loaded
   const firestore = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
@@ -48,8 +48,9 @@ export default function AccountPage() {
   const [isSaving, startSaveTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
 
-  const userProfileRef = useMemoFirebase(() => (user ? doc(firestore, 'users', user.uid) : null), [user, firestore]);
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef, { listen: false });
+  // The user object is guaranteed to be available here
+  const userProfileRef = useMemoFirebase(() => doc(firestore, 'users', user!.uid), [user, firestore]);
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
 
   useEffect(() => {
     if (userProfile?.gender) {
@@ -59,23 +60,13 @@ export default function AccountPage() {
 
   const handleSaveChanges = () => {
     if (!user || !gender) return;
-    startSaveTransition(async () => {
-      try {
+    startSaveTransition(() => {
         const userDocRef = doc(firestore, 'users', user.uid);
         setDocumentNonBlocking(userDocRef, { gender }, { merge: true });
-
         toast({
           title: 'Success!',
           description: 'Your profile has been updated.',
         });
-      } catch (error) {
-        console.error('Error updating profile:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Uh oh!',
-          description: 'Could not save your changes. Please try again.',
-        });
-      }
     });
   };
 
@@ -86,6 +77,7 @@ export default function AccountPage() {
         const userDocRef = doc(firestore, 'users', user.uid);
         await deleteDoc(userDocRef);
 
+        // This will trigger the onAuthStateChanged listener and redirect
         await user.delete();
         
         toast({
@@ -93,8 +85,7 @@ export default function AccountPage() {
           description: 'Your account and all data have been permanently removed.',
         });
         
-        router.push('/');
-
+        // No need to manually push, the AppLayout will handle the redirect.
       } catch (error: any) {
         console.error('Error deleting account:', error);
          toast({
@@ -106,7 +97,8 @@ export default function AccountPage() {
     });
   };
 
-  const isLoading = isUserLoading || (user && isProfileLoading);
+  // The only loading state we care about here is the profile loading.
+  const isLoading = isProfileLoading;
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -184,7 +176,7 @@ export default function AccountPage() {
                     This action cannot be undone. This will permanently delete your
                     account, your generated avatar, and all your measurement data
                     from our servers.
-                  </AlertDialogDescription>
+                  </DESCRIPTION>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>

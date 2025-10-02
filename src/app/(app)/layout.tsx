@@ -40,7 +40,6 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useUser, useAuth } from '@/firebase';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 

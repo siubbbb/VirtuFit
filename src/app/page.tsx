@@ -1,4 +1,5 @@
 'use client';
+
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -38,7 +39,7 @@ const signInSchema = z.object({
   password: z.string().min(1, { message: 'Password is required.'}),
 });
 
-export default function LoginPage() {
+function LoginComponent() {
   const auth = useAuth();
   const router = useRouter();
   const { user, isUserLoading } = useUser();
@@ -80,7 +81,7 @@ export default function LoginPage() {
   
   if (isUserLoading || user) {
      return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-background">
+        <div className="flex min-h-screen flex-col items-center justify-center bg-transparent">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
           <p className="mt-4 text-muted-foreground">Loading...</p>
         </div>
@@ -88,10 +89,6 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
-      <div className='absolute top-8 left-8'>
-        <Logo />
-      </div>
       <Tabs value={activeTab} onValueChange={onTabChange} className="w-full max-w-sm">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="sign-in">Sign In</TabsTrigger>
@@ -186,6 +183,17 @@ export default function LoginPage() {
           </Card>
         </TabsContent>
       </Tabs>
+  );
+}
+
+
+export default function LoginPage() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
+      <div className='absolute top-8 left-8'>
+        <Logo />
+      </div>
+      <LoginComponent />
     </div>
   );
 }

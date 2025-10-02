@@ -1,7 +1,7 @@
+
 'use client';
 import { TryOnClient } from '@/components/try-on/try-on-client';
-import { recommendFit } from '@/ai/flows/recommend-fit';
-import { BRAND_SIZE_CHARTS } from '@/lib/constants';
+import { getFitRecommendation } from './actions';
 import { useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { doc, getFirestore } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -9,29 +9,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-
-async function getFitRecommendation(userMeasurements: Record<string, number>, garmentId: string) {
-  'use server';
-  try {
-    const brandData = BRAND_SIZE_CHARTS[garmentId];
-    if (!brandData) {
-      console.error(`No size chart found for garment ID: ${garmentId}`);
-      return {};
-    }
-
-    const { chart, garmentType } = brandData;
-    
-    const result = await recommendFit({
-      userMeasurements,
-      brandSizeChart: chart,
-      garmentType,
-    });
-    return result;
-  } catch (error) {
-    console.error("Failed to get fit recommendation:", error);
-    return {};
-  }
-}
 
 export default function TryOnPage() {
   const { user, isUserLoading } = useUser();

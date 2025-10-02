@@ -12,9 +12,9 @@ export function QrCodeFlow() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const [origin, setOrigin] = useState('');
-
-  // Get the current URL origin on the client side
+  
   useEffect(() => {
+    // This effect runs only once on the client after the component mounts
     setOrigin(window.location.origin);
   }, []);
 
@@ -23,13 +23,13 @@ export function QrCodeFlow() {
     [user]
   );
 
-  // Listen for changes to the user's document, specifically the avatarUrl
-  const { data: userProfile } = useDoc(userProfileRef);
+  // This hook listens for the avatarUrl to be added to the user's profile
+  const { data: userProfile } = useDoc(userProfileRef, {
+    listen: true // Ensure we are listening for real-time updates
+  });
 
   useEffect(() => {
-    // If we detect an avatarUrl has been added, the mobile flow is complete.
     if (userProfile?.avatarUrl) {
-      // Wait a moment to show the success state, then redirect.
       setTimeout(() => {
         router.push('/dashboard');
       }, 2000);
@@ -38,17 +38,15 @@ export function QrCodeFlow() {
   
   const qrUrl = useMemo(() => {
     if (!origin || !user) return '';
-    // The URL the QR code will point to. It includes the user's UID to associate
-    // the mobile session with the desktop session.
     return `${origin}/capture?session=${user.uid}`;
   }, [origin, user]);
 
-  const isQrLoading = isUserLoading || !origin;
+  const isLoading = isUserLoading || !origin;
   const isComplete = !!userProfile?.avatarUrl;
 
   return (
     <div className="max-w-2xl mx-auto">
-       <header className="mb-8 text-center">
+      <header className="mb-8 text-center">
         <h1 className="text-4xl font-bold font-headline">Scan to Get Measured</h1>
         <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
           This part of the experience is designed for your mobile phone.
@@ -58,41 +56,40 @@ export function QrCodeFlow() {
       <Card className="shadow-lg">
         <CardContent className="p-6 flex flex-col md:flex-row items-center gap-8">
           <div className="flex-1 space-y-4 text-center md:text-left">
-             <div className="flex justify-center md:justify-start">
-                <Smartphone className="w-12 h-12 text-primary" />
-             </div>
-             <h2 className="text-2xl font-semibold">Continue on your phone</h2>
-             <ol className="list-decimal list-inside text-muted-foreground text-left space-y-2">
-                <li>Open the camera app on your phone.</li>
-                <li>Scan the QR code to open a secure link in your mobile browser.</li>
-                <li>Follow the on-screen instructions to take your photo.</li>
-                <li>Your desktop screen will update automatically when you're done.</li>
-             </ol>
+            <div className="flex justify-center md:justify-start">
+              <Smartphone className="w-12 h-12 text-primary" />
+            </div>
+            <h2 className="text-2xl font-semibold">Continue on your phone</h2>
+            <ol className="list-decimal list-inside text-muted-foreground text-left space-y-2">
+              <li>Open the camera app on your phone.</li>
+              <li>Scan the QR code to open a secure link in your mobile browser.</li>
+              <li>Follow the on-screen instructions to take your photo.</li>
+              <li>Your desktop screen will update automatically when you're done.</li>
+            </ol>
           </div>
           <div className="relative w-48 h-48 flex items-center justify-center">
-            {isQrLoading && <Skeleton className="w-full h-full" />}
+            {isLoading && <Skeleton className="w-full h-full" />}
             
-            {!isQrLoading && qrUrl && (
-               <QRCode
-                 value={qrUrl}
-                 size={192}
-                 bgColor="hsl(var(--background))"
-                 fgColor="hsl(var(--foreground))"
-                 level="Q"
-                 includeMargin={false}
-                 className="rounded-lg"
-               />
+            {!isLoading && qrUrl && !isComplete && (
+              <QRCode
+                value={qrUrl}
+                size={192}
+                bgColor="hsl(var(--background))"
+                fgColor="hsl(var(--foreground))"
+                level="Q"
+                includeMargin={false}
+                className="rounded-lg"
+              />
             )}
 
             {isComplete && (
-                <div className="absolute inset-0 bg-background/90 flex flex-col items-center justify-center gap-2 rounded-lg text-center">
-                    <CheckCircle className="w-16 h-16 text-green-500 animate-in zoom-in-50" />
-                    <p className="font-semibold text-foreground">All Set!</p>
-                    <p className="text-sm text-muted-foreground">Redirecting...</p>
-                </div>
+              <div className="absolute inset-0 bg-background/90 flex flex-col items-center justify-center gap-2 rounded-lg text-center">
+                <CheckCircle className="w-16 h-16 text-green-500 animate-in zoom-in-50" />
+                <p className="font-semibold text-foreground">All Set!</p>
+                <p className="text-sm text-muted-foreground">Redirecting...</p>
+              </div>
             )}
-
-             {!isComplete && !isQrLoading && (
+             {!isLoading && !isComplete && (
                  <div className="absolute inset-0 bg-transparent flex flex-col items-center justify-center gap-2 rounded-lg text-center pointer-events-none">
                     <div className="animate-pulse">
                         <Loader2 className="w-12 h-12 text-primary/50" />

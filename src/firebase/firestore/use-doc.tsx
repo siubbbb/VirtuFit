@@ -24,6 +24,10 @@ export interface UseDocResult<T> {
   error: FirestoreError | Error | null; // Error object, or null.
 }
 
+export interface UseDocOptions {
+  listen?: boolean;
+}
+
 /**
  * React hook to subscribe to a single Firestore document in real-time.
  * Handles nullable references.
@@ -40,6 +44,7 @@ export interface UseDocResult<T> {
  */
 export function useDoc<T = any>(
   memoizedDocRef: DocumentReference<DocumentData> | null | undefined,
+  options: UseDocOptions = { listen: true }
 ): UseDocResult<T> {
   type StateDataType = WithId<T> | null;
 
@@ -52,6 +57,10 @@ export function useDoc<T = any>(
       setData(null);
       setIsLoading(false);
       setError(null);
+      return;
+    }
+
+    if (!options.listen) {
       return;
     }
 
@@ -87,7 +96,7 @@ export function useDoc<T = any>(
     );
 
     return () => unsubscribe();
-  }, [memoizedDocRef]); // Re-run if the memoizedDocRef changes.
+  }, [memoizedDocRef, options.listen]); // Re-run if the memoizedDocRef changes.
 
   return { data, isLoading, error };
 }

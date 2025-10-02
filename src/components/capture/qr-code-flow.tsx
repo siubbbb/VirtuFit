@@ -24,7 +24,7 @@ export function QrCodeFlow() {
   );
 
   // Listen for changes to the user's document, specifically the avatarUrl
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
+  const { data: userProfile } = useDoc(userProfileRef);
 
   useEffect(() => {
     // If we detect an avatarUrl has been added, the mobile flow is complete.

@@ -12,9 +12,9 @@ export function QrCodeFlow() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const [origin, setOrigin] = useState('');
-  
+
+  // This effect runs only once on the client after the component mounts
   useEffect(() => {
-    // This effect runs only once on the client after the component mounts
     setOrigin(window.location.origin);
   }, []);
 

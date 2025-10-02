@@ -11,20 +11,18 @@ import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function DashboardPage() {
-    // AppLayout guarantees user is loaded, so we can assert user is not null
-    const { user } = useUser();
+    const { user, isUserLoading } = useUser();
     const firestore = useFirestore();
 
     const userProfileRef = useMemoFirebase(
       () => (user ? doc(firestore, 'users', user.uid) : null),
       [user, firestore]
     );
-    // useDoc handles its own loading state.
     const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
 
     const avatarPlaceholder = PlaceHolderImages.find(img => img.id === 'avatar-placeholder');
-    const isLoading = isProfileLoading;
-    const hasAvatar = userProfile?.avatarUrl;
+    const isLoading = isUserLoading || isProfileLoading;
+    const hasAvatar = !!userProfile?.avatarUrl;
     const avatarUrl = hasAvatar ? userProfile.avatarUrl : avatarPlaceholder?.imageUrl;
 
   return (
@@ -37,7 +35,7 @@ export default function DashboardPage() {
              </div>
            ) : (
              <>
-                <h1 className="text-3xl font-bold text-foreground font-headline">Welcome back, {user?.email}!</h1>
+                <h1 className="text-3xl font-bold text-foreground font-headline">Welcome back, {user?.displayName || user?.email}!</h1>
                 <p className="text-muted-foreground mt-1">Ready to find your perfect fit?</p>
              </>
            )}

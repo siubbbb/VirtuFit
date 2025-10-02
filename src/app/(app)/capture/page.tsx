@@ -9,16 +9,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { CameraCapture } from '@/components/capture/camera-capture';
 
 export default function CapturePage() {
-  const { user } = useUser(); // AppLayout guarantees user is loaded.
+  const { user } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const isMobileSession = searchParams.has('session');
   
-  // Determine which user ID to use for fetching the profile.
-  // If it's a mobile session, use the session ID from the URL.
-  // Otherwise, use the currently logged-in user's UID.
   const activeUserId = isMobileSession ? searchParams.get('session') : user?.uid;
 
   const userProfileRef = useMemoFirebase(
@@ -26,18 +23,14 @@ export default function CapturePage() {
     [activeUserId, firestore]
   );
   
-  // Listen for the avatarUrl to be added to the user's profile.
   const { data: userProfile } = useDoc(userProfileRef, { listen: true });
 
   useEffect(() => {
-    // If we are on desktop (not a mobile session) and the avatar has been created,
-    // it means the mobile flow is complete, and we should redirect to the dashboard.
     if (userProfile?.avatarUrl && !isMobileSession) {
       router.push('/dashboard');
     }
   }, [userProfile?.avatarUrl, router, isMobileSession]);
 
-  // On a mobile device, show the camera. On desktop, show the QR code.
   if (isMobileSession) {
     return (
       <div className="max-w-4xl mx-auto">
@@ -52,7 +45,6 @@ export default function CapturePage() {
     );
   }
   
-  // Default to showing the QR code flow on desktop.
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <QrCodeFlow />

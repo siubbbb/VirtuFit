@@ -11,6 +11,8 @@ import {
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { useUser } from '../provider';
+
 
 /** Utility type to add an 'id' field to a given type T. */
 type WithId<T> = T & { id: string };
@@ -48,12 +50,13 @@ export function useDoc<T = any>(
   type StateDataType = WithId<T> | null;
 
   const [data, setData] = useState<StateDataType>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true); // Start as loading
   const [error, setError] = useState<FirestoreError | Error | null>(null);
+  const { isUserLoading } = useUser();
 
   useEffect(() => {
-    // If the docRef is not provided, we are not ready to fetch.
-    if (!memoizedDocRef) {
+    // If the user is still loading OR the docRef is not provided, we are not ready to fetch.
+    if (isUserLoading || !memoizedDocRef) {
       setIsLoading(false);
       setData(null);
       setError(null);
@@ -62,52 +65,35 @@ export function useDoc<T = any>(
 
     setIsLoading(true);
 
+    const processSnapshot = (snapshot: DocumentSnapshot<DocumentData>) => {
+      if (snapshot.exists()) {
+        setData({ ...(snapshot.data() as T), id: snapshot.id });
+      } else {
+        setData(null);
+      }
+      setError(null);
+      setIsLoading(false);
+    };
+
+    const handleError = (err: FirestoreError) => {
+      const contextualError = new FirestorePermissionError({
+        operation: 'get',
+        path: memoizedDocRef.path,
+      });
+      setError(contextualError);
+      setData(null);
+      setIsLoading(false);
+      errorEmitter.emit('permission-error', contextualError);
+    };
+
     if (options.listen) {
-      const unsubscribe = onSnapshot(
-        memoizedDocRef,
-        (snapshot: DocumentSnapshot<DocumentData>) => {
-          if (snapshot.exists()) {
-            setData({ ...(snapshot.data() as T), id: snapshot.id });
-          } else {
-            setData(null);
-          }
-          setError(null);
-          setIsLoading(false);
-        },
-        (err: FirestoreError) => {
-          const contextualError = new FirestorePermissionError({
-            operation: 'get',
-            path: memoizedDocRef.path,
-          });
-          setError(contextualError);
-          setData(null);
-          setIsLoading(false);
-          errorEmitter.emit('permission-error', contextualError);
-        }
-      );
+      const unsubscribe = onSnapshot(memoizedDocRef, processSnapshot, handleError);
       return () => unsubscribe();
     } else {
-      getDoc(memoizedDocRef).then(snapshot => {
-        if (snapshot.exists()) {
-          setData({ ...(snapshot.data() as T), id: snapshot.id });
-        } else {
-          setData(null);
-        }
-        setError(null);
-        setIsLoading(false);
-      }).catch((err: FirestoreError) => {
-         const contextualError = new FirestorePermissionError({
-            operation: 'get',
-            path: memoizedDocRef.path,
-          });
-          setError(contextualError);
-          setData(null);
-          setIsLoading(false);
-          errorEmitter.emit('permission-error', contextualError);
-      });
+      getDoc(memoizedDocRef).then(processSnapshot).catch(handleError);
     }
 
-  }, [memoizedDocRef, options.listen]);
+  }, [memoizedDocRef, options.listen, isUserLoading]);
 
   return { data, isLoading, error };
 }

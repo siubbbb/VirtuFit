@@ -39,7 +39,7 @@ import { useRouter } from 'next/navigation';
 type Gender = "male" | "female" | "other";
 
 export default function AccountPage() {
-  const { user } = useUser(); // AppLayout guarantees user is loaded
+  const { user, isUserLoading } = useUser(); // AppLayout guarantees user is loaded, but we still need loading state
   const firestore = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
@@ -48,8 +48,10 @@ export default function AccountPage() {
   const [isSaving, startSaveTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
 
-  // The user object is guaranteed to be available here
-  const userProfileRef = useMemoFirebase(() => doc(firestore, 'users', user!.uid), [user, firestore]);
+  const userProfileRef = useMemoFirebase(
+    () => (user ? doc(firestore, 'users', user.uid) : null),
+    [user, firestore]
+  );
   const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
 
   useEffect(() => {
@@ -85,7 +87,6 @@ export default function AccountPage() {
           description: 'Your account and all data have been permanently removed.',
         });
         
-        // No need to manually push, the AppLayout will handle the redirect.
       } catch (error: any) {
         console.error('Error deleting account:', error);
          toast({
@@ -97,8 +98,8 @@ export default function AccountPage() {
     });
   };
 
-  // The only loading state we care about here is the profile loading.
-  const isLoading = isProfileLoading;
+  // The overall loading state depends on both user auth and profile fetching.
+  const isLoading = isUserLoading || isProfileLoading;
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -176,7 +177,7 @@ export default function AccountPage() {
                     This action cannot be undone. This will permanently delete your
                     account, your generated avatar, and all your measurement data
                     from our servers.
-                  </DESCRIPTION>
+                  </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>

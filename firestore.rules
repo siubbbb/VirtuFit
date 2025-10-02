@@ -1,7 +1,8 @@
 /**
- * @file VirtuFit Firestore Security Rules
- * @description This ruleset enforces a strict user-ownership model for user profiles and associated data (body measurements, avatars, and fit recommendations).
- * Garments and size charts are publicly readable.
+ * @file Overview
+ * This ruleset enforces a strict user-ownership model for user profiles and associated data
+ * (body measurements, avatars, and fit recommendations).
+ * Garments and size charts are publicly readable but only writable by authorized users (TODO).
  *
  * Data Structure:
  * - /users/{userId}: User profile information.
@@ -12,164 +13,144 @@
  * - /sizeCharts/{sizeChartId}: Size chart information.
  *
  * Key Security Decisions:
- * - User-owned data is secured using the `isOwner(userId)` helper function, ensuring that only the authenticated user can read and write their own data.
- * - The `userId` is denormalized into the BodyMeasurement, Avatar and FitRecommendation documents to ensure authorization independence.
- * - Garments and SizeCharts are publicly readable, but writes are denied (TODO: Add admin role for writes).
- * - User listing is disallowed for privacy.
+ * - User data is strictly controlled by the owning user.
+ * - Listing of user subcollections is allowed only for the owning user.
+ * - Garments and SizeCharts are publicly readable.
+ * - Write access to garments and size charts is currently not defined and marked with TODO.
  *
  * Denormalization for Authorization:
- * - The `userId` is included in BodyMeasurement, Avatar, and FitRecommendation documents to avoid costly `get()` calls to the UserProfile document for authorization.
+ * - The `userId` is denormalized into the BodyMeasurement, Avatar, and FitRecommendation documents
+ *   to ensure authorization independence. This prevents the need for `get()` calls in security
+ *   rules to verify ownership.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Manages user profile access. Only the user can read and write their own profile.
+     * @description Controls access to user profile information.
      * @path /users/{userId}
-     * @allow (create, update, delete) if request.auth.uid == userId - Allows the user to create, update, and delete their own profile.
-     * @allow (get) if request.auth.uid == userId - Allows the user to read their own profile.
-     * @deny (create, update, delete) if request.auth.uid != userId - Denies other users from creating, updating, or deleting this profile.
-     * @deny (list) - Listing all users is not allowed.
-     * @principle Enforces document ownership for writes.
+     * @allow (create) User with ID 'user123' can create their profile if authenticated as 'user123'.
+     * @deny (create) User with ID 'user456' cannot create a profile for 'user123'.
+     * @allow (get) User 'user123' can read their profile.
+     * @deny (get) User 'user456' cannot read 'user123's profile.
+     * @allow (update) User 'user123' can update their profile.
+     * @deny (update) User 'user456' cannot update 'user123's profile.
+     * @allow (delete) User 'user123' can delete their profile.
+     * @deny (delete) User 'user456' cannot delete 'user123's profile.
+     * @principle Enforces document ownership for writes, restricts read access to the owner.
      */
     match /users/{userId} {
-      // Helper function to check if the user is signed in and owns the document.
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-
-      // Read permissions: Only the owner can get their profile. Listing all users is denied.
-      allow get: if isOwner(userId);
+      allow get: if isSignedIn() && isOwner(userId);
       allow list: if false;
-
-      // Write permissions: Only the owner can create, update, and delete their profile.
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isOwner(userId) && resource.data.id == userId;
-      allow delete: if isOwner(userId) && resource.data.id == userId;
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Manages body measurement access. Only the user can read and write their own body measurements.
+     * @description Controls access to body measurements for a specific user.
      * @path /users/{userId}/bodyMeasurements/{bodyMeasurementId}
-     * @allow (create, update, delete) if request.auth.uid == userId - Allows the user to create, update, and delete their own body measurements.
-     * @allow (get, list) if request.auth.uid == userId - Allows the user to read and list their own body measurements.
-     * @deny (create, update, delete) if request.auth.uid != userId - Denies other users from creating, updating, or deleting these body measurements.
-     * @principle Enforces document ownership for writes, with userId denormalized for authorization independence.
+     * @allow (create) User 'user123' can create a body measurement record for themselves.
+     * @deny (create) User 'user456' cannot create a body measurement record for 'user123'.
+     * @allow (get) User 'user123' can read their own body measurement record.
+     * @deny (get) User 'user456' cannot read 'user123's body measurement record.
+     * @allow (update) User 'user123' can update their body measurement record.
+     * @deny (update) User 'user456' cannot update 'user123's body measurement record.
+     * @allow (delete) User 'user123' can delete their own body measurement record.
+     * @deny (delete) User 'user456' cannot delete 'user123's body measurement record.
+     * @principle Enforces document ownership for writes, restricts read access to the owner.
      */
     match /users/{userId}/bodyMeasurements/{bodyMeasurementId} {
-      // Helper function to check if the user is signed in and owns the document.
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-
-      // Helper function to check if the user is the owner and the resource exists
-      function isExistingOwner(userId) {
-          return isOwner(userId) && resource != null;
-      }
-
-      // Read permissions: Only the owner can get and list their body measurements.
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-
-      // Write permissions: Only the owner can create, update, and delete their body measurements.
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && resource.data.userId == userId;
-      allow delete: if isExistingOwner(userId) && resource.data.userId == userId;
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Manages avatar access. Only the user can read and write their own avatars.
+     * @description Controls access to avatars for a specific user.
      * @path /users/{userId}/avatars/{avatarId}
-     * @allow (create, update, delete) if request.auth.uid == userId - Allows the user to create, update, and delete their own avatars.
-     * @allow (get, list) if request.auth.uid == userId - Allows the user to read and list their own avatars.
-     * @deny (create, update, delete) if request.auth.uid != userId - Denies other users from creating, updating, or deleting these avatars.
-     * @principle Enforces document ownership for writes, with userId denormalized for authorization independence.
+     * @allow (create) User 'user123' can create an avatar for themselves.
+     * @deny (create) User 'user456' cannot create an avatar for 'user123'.
+     * @allow (get) User 'user123' can read their own avatar.
+     * @deny (get) User 'user456' cannot read 'user123's avatar.
+     * @allow (update) User 'user123' can update their avatar.
+     * @deny (update) User 'user456' cannot update 'user123's avatar.
+     * @allow (delete) User 'user123' can delete their own avatar.
+     * @deny (delete) User 'user456' cannot delete 'user123's avatar.
+     * @principle Enforces document ownership for writes, restricts read access to the owner.
      */
     match /users/{userId}/avatars/{avatarId} {
-      // Helper function to check if the user is signed in and owns the document.
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-
-      // Helper function to check if the user is the owner and the resource exists
-      function isExistingOwner(userId) {
-          return isOwner(userId) && resource != null;
-      }
-
-      // Read permissions: Only the owner can get and list their avatars.
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-
-      // Write permissions: Only the owner can create, update, and delete their avatars.
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && resource.data.userId == userId;
-      allow delete: if isExistingOwner(userId) && resource.data.userId == userId;
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Manages fit recommendation access. Only the user can read and write their own fit recommendations.
+     * @description Controls access to fit recommendations for a specific user.
      * @path /users/{userId}/fitRecommendations/{fitRecommendationId}
-     * @allow (create, update, delete) if request.auth.uid == userId - Allows the user to create, update, and delete their own fit recommendations.
-     * @allow (get, list) if request.auth.uid == userId - Allows the user to read and list their own fit recommendations.
-     * @deny (create, update, delete) if request.auth.uid != userId - Denies other users from creating, updating, or deleting these fit recommendations.
-     * @principle Enforces document ownership for writes, with userId denormalized for authorization independence.
+     * @allow (create) User 'user123' can create a fit recommendation for themselves.
+     * @deny (create) User 'user456' cannot create a fit recommendation for 'user123'.
+     * @allow (get) User 'user123' can read their own fit recommendation.
+     * @deny (get) User 'user456' cannot read 'user123's fit recommendation.
+     * @allow (update) User 'user123' can update their own fit recommendation.
+     * @deny (update) User 'user456' cannot update 'user123's fit recommendation.
+     * @allow (delete) User 'user123' can delete their own fit recommendation.
+     * @deny (delete) User 'user456' cannot delete 'user123's fit recommendation.
+     * @principle Enforces document ownership for writes, restricts read access to the owner.
      */
     match /users/{userId}/fitRecommendations/{fitRecommendationId} {
-      // Helper function to check if the user is signed in and owns the document.
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-
-      // Helper function to check if the user is the owner and the resource exists
-      function isExistingOwner(userId) {
-          return isOwner(userId) && resource != null;
-      }
-
-      // Read permissions: Only the owner can get and list their fit recommendations.
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-
-      // Write permissions: Only the owner can create, update, and delete their fit recommendations.
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && resource.data.userId == userId;
-      allow delete: if isExistingOwner(userId) && resource.data.userId == userId;
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Manages garment access. Garments are publicly readable, but writes are currently disallowed.
+     * @description Controls access to garment information.
      * @path /garments/{garmentId}
-     * @allow (get, list) if true - Allows anyone to read garment information.
-     * @deny (create, update, delete) if false - Denies anyone from creating, updating, or deleting garment information. // TODO: Add admin role for writes
-     * @principle Allows public read access, but restricts write access.
+     * @allow (get) Any user can read garment information.
+     * @deny (create) No one can create garment information without specific authorization.
+     * @deny (update) No one can update garment information without specific authorization.
+     * @deny (delete) No one can delete garment information without specific authorization.
+     * @principle Public read access, owner-only writes (TODO: Implement owner-only writes).
      */
     match /garments/{garmentId} {
-      // Read permissions: Allow anyone to read garment information.
-      allow get: if true;
-      allow list: if true;
-
-      // Write permissions: Deny anyone from creating, updating, or deleting garment information.
-      allow create: if false; // TODO: Add admin role for writes
-      allow update: if false; // TODO: Add admin role for writes
-      allow delete: if false; // TODO: Add admin role for writes
+      allow get, list: if true;
+      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
 
     /**
-     * @description Manages size chart access. Size charts are publicly readable, but writes are currently disallowed.
+     * @description Controls access to size chart information.
      * @path /sizeCharts/{sizeChartId}
-     * @allow (get, list) if true - Allows anyone to read size chart information.
-     * @deny (create, update, delete) if false - Denies anyone from creating, updating, or deleting size chart information. // TODO: Add admin role for writes
-     * @principle Allows public read access, but restricts write access.
+     * @allow (get) Any user can read size chart information.
+     * @deny (create) No one can create size chart information without specific authorization.
+     * @deny (update) No one can update size chart information without specific authorization.
+     * @deny (delete) No one can delete size chart information without specific authorization.
+     * @principle Public read access, owner-only writes (TODO: Implement owner-only writes).
      */
     match /sizeCharts/{sizeChartId} {
-      // Read permissions: Allow anyone to read size chart information.
-      allow get: if true;
-      allow list: if true;
-
-      // Write permissions: Deny anyone from creating, updating, or deleting size chart information.
-      allow create: if false; // TODO: Add admin role for writes
-      allow update: if false; // TODO: Add admin role for writes
-      allow delete: if false; // TODO: Add admin role for writes
+      allow get, list: if true;
+      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
+
+  }
+
+  // Helper functions
+  function isSignedIn() {
+    return request.auth != null;
+  }
+
+  function isOwner(userId) {
+    return request.auth.uid == userId;
+  }
+
+  function isExistingOwner(userId) {
+    return isSignedIn() && isOwner(userId) && resource != null;
   }
 }

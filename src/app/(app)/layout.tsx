@@ -7,7 +7,6 @@ import {
   Home,
     Shirt,
     ScanLine,
-    User,
     LogOut,
     ChevronDown,
     Settings,
@@ -114,7 +113,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                                 <AvatarFallback>{getInitials(user.displayName)}</AvatarFallback>
                             </Avatar>
                             <div className="text-left group-data-[collapsible=icon]:hidden">
-                                <p className="font-medium text-sm text-foreground truncate">{user.displayName || 'Anonymous'}</p>
+                                <p className="font-medium text-sm text-foreground truncate">User</p>
                                 <p className="text-xs text-muted-foreground truncate">{user.email || 'No email'}</p>
                             </div>
                           </>
@@ -137,7 +136,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         <div className="flex flex-col space-y-1">
                             {user && (
                               <>
-                                <p className="text-sm font-medium leading-none">{user.displayName || 'Anonymous'}</p>
+                                <p className="text-sm font-medium leading-none">User</p>
                                 <p className="text-xs leading-none text-muted-foreground">
                                 {user.email || 'No email'}
                                 </p>

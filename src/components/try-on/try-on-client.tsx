@@ -19,7 +19,6 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 type User = {
-  name: string;
   avatarUrl: string;
   measurements: Record<string, number>;
 };
@@ -76,7 +75,7 @@ export function TryOnClient({ user, getFitRecommendationAction }: Props) {
             <div className="relative w-full max-w-lg aspect-[4/5] bg-muted rounded-lg overflow-hidden">
               <Image
                 src={user.avatarUrl}
-                alt={`${user.name}'s avatar`}
+                alt={`User's avatar`}
                 layout="fill"
                 objectFit="contain"
                 className="transition-opacity duration-300"

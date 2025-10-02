@@ -21,7 +21,6 @@ export default function TryOnPage() {
   const isLoading = isUserLoading || isProfileLoading;
   
   const userClientData = userProfile ? {
-    name: userProfile.displayName,
     avatarUrl: userProfile.avatarUrl,
     measurements: userProfile.measurements,
   } : null;

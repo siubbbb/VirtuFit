@@ -34,7 +34,7 @@ export default function DashboardPage() {
              </div>
            ) : (
              <>
-                <h1 className="text-3xl font-bold text-foreground font-headline">Welcome back, {user?.displayName || 'VirtuFit User'}!</h1>
+                <h1 className="text-3xl font-bold text-foreground font-headline">Welcome back!</h1>
                 <p className="text-muted-foreground mt-1">Ready to find your perfect fit?</p>
              </>
            )}

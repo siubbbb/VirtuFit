@@ -9,7 +9,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   AlertDialog,
@@ -22,42 +21,46 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Separator } from '@/components/ui/separator';
-import { useUser, useAuth, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
+import { useUser, setDocumentNonBlocking } from '@/firebase';
 import { doc, deleteDoc, getFirestore } from 'firebase/firestore';
 import { useState, useEffect, useTransition } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { updateProfile } from 'firebase/auth';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+type Gender = "male" | "female" | "other" | "prefer_not_to_say";
+
 export default function AccountPage() {
   const { user, isUserLoading } = useUser();
-  const auth = useAuth();
   const firestore = getFirestore();
   const { toast } = useToast();
   const router = useRouter();
 
-  const [displayName, setDisplayName] = useState('');
+  const [gender, setGender] = useState<Gender | ''>('');
   const [isSaving, startSaveTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
 
   useEffect(() => {
-    if (user) {
-      setDisplayName(user.displayName || '');
+    if (user?.gender) {
+      setGender(user.gender as Gender);
     }
   }, [user]);
 
   const handleSaveChanges = () => {
-    if (!user) return;
+    if (!user || !gender) return;
     startSaveTransition(async () => {
       try {
-        // Update Firebase Auth profile
-        await updateProfile(user, { displayName });
-
         // Update Firestore profile
         const userDocRef = doc(firestore, 'users', user.uid);
-        setDocumentNonBlocking(userDocRef, { displayName }, { merge: true });
+        setDocumentNonBlocking(userDocRef, { gender }, { merge: true });
 
         toast({
           title: 'Success!',
@@ -116,21 +119,35 @@ export default function AccountPage() {
         <CardHeader>
           <CardTitle>Profile Information</CardTitle>
           <CardDescription>
-            This is your public display name and the email associated with your account.
+            This is the email associated with your account and your selected gender.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input id="name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} disabled={isUserLoading || isSaving} />
+            <Label htmlFor="gender">Gender</Label>
+            <Select onValueChange={(value) => setGender(value as Gender)} value={gender} disabled={isUserLoading || isSaving}>
+              <SelectTrigger id="gender">
+                <SelectValue placeholder="Select your gender" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="male">Male</SelectItem>
+                <SelectItem value="female">Female</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+                <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" value={user?.email || ''} disabled />
+            <Select id="email" disabled>
+                <SelectTrigger>
+                    <SelectValue placeholder={user?.email || 'No email'} />
+                </SelectTrigger>
+            </Select>
           </div>
         </CardContent>
         <CardFooter className="border-t px-6 py-4">
-          <Button onClick={handleSaveChanges} disabled={isUserLoading || isSaving}>
+          <Button onClick={handleSaveChanges} disabled={isUserLoading || isSaving || !gender}>
             {isSaving && <Loader2 className="mr-2 animate-spin" />}
             Save Changes
           </Button>

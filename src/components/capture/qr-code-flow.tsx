@@ -1,4 +1,5 @@
 'use client';
+
 import { useEffect, useMemo, useState } from 'react';
 import QRCode from 'qrcode.react';
 import { useUser, useDoc, useMemoFirebase } from '@/firebase';
@@ -15,12 +16,9 @@ export function QrCodeFlow() {
 
   // This effect runs only once on the client after the component mounts
   useEffect(() => {
-    // We only set the origin if it's not already set.
     // This code will only run in the browser, safely accessing window.location.origin
-    if (!origin) {
-      setOrigin(window.location.origin);
-    }
-  }, [origin]);
+    setOrigin(window.location.origin);
+  }, []);
 
   const userProfileRef = useMemoFirebase(
     () => (user ? doc(getFirestore(), 'users', user.uid) : null),
@@ -28,7 +26,6 @@ export function QrCodeFlow() {
   );
 
   // This hook listens for the avatarUrl to be added to the user's profile
-  // It runs in the background and does not block the initial QR code render.
   const { data: userProfile } = useDoc(userProfileRef, {
     listen: true // Ensure we are listening for real-time updates
   });

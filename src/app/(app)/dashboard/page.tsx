@@ -6,21 +6,23 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { ArrowRight, ScanLine, Loader2 } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { useUser, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, getFirestore } from 'firebase/firestore';
+import { useUser, useDoc, useMemoFirebase, useFirestore } from '@/firebase';
+import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function DashboardPage() {
     const { user, isUserLoading } = useUser();
+    const firestore = useFirestore();
 
     const userProfileRef = useMemoFirebase(
-      () => (user ? doc(getFirestore(), 'users', user.uid) : null),
-      [user]
+      () => (user ? doc(firestore, 'users', user.uid) : null),
+      [user, firestore]
     );
-    const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
+    // Fetch profile once, no need to listen for this static data on dashboard
+    const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef, { listen: false });
 
     const avatarPlaceholder = PlaceHolderImages.find(img => img.id === 'avatar-placeholder');
-    const isLoading = isUserLoading || isProfileLoading;
+    const isLoading = isUserLoading || (user && isProfileLoading);
     const hasAvatar = userProfile?.avatarUrl;
     const avatarUrl = hasAvatar ? userProfile.avatarUrl : avatarPlaceholder?.imageUrl;
 

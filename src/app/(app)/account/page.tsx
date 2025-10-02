@@ -29,8 +29,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Separator } from '@/components/ui/separator';
-import { useUser, setDocumentNonBlocking } from '@/firebase';
-import { doc, deleteDoc, getFirestore } from 'firebase/firestore';
+import { useUser, setDocumentNonBlocking, useFirestore } from '@/firebase';
+import { doc, deleteDoc } from 'firebase/firestore';
 import { useState, useEffect, useTransition } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
@@ -40,7 +40,7 @@ type Gender = "male" | "female" | "other";
 
 export default function AccountPage() {
   const { user, isUserLoading } = useUser();
-  const firestore = getFirestore();
+  const firestore = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -48,11 +48,16 @@ export default function AccountPage() {
   const [isSaving, startSaveTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
 
+  // We can't get user data from the useUser hook directly, need to fetch from firestore
+  const userProfileRef = useMemo(() => (user ? doc(firestore, 'users', user.uid) : null), [user, firestore]);
+  // Not listening here, just a one-time fetch is enough for the account page
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef, { listen: false });
+
   useEffect(() => {
-    if (user?.gender) {
-      setGender(user.gender as Gender);
+    if (userProfile?.gender) {
+      setGender(userProfile.gender as Gender);
     }
-  }, [user]);
+  }, [userProfile]);
 
   const handleSaveChanges = () => {
     if (!user || !gender) return;
@@ -83,7 +88,7 @@ export default function AccountPage() {
       try {
         // Delete Firestore data first
         const userDocRef = doc(firestore, 'users', user.uid);
-        await deleteDoc(userDocRef); // Use await here for sequential deletion
+        await deleteDoc(userDocRef);
 
         // Then delete the user from Auth
         await user.delete();
@@ -106,6 +111,8 @@ export default function AccountPage() {
     });
   };
 
+  const isLoading = isUserLoading || (user && isProfileLoading);
+
   return (
     <div className="max-w-2xl mx-auto">
       <header className="mb-8">
@@ -125,7 +132,7 @@ export default function AccountPage() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="gender">Gender</Label>
-            <Select onValueChange={(value) => setGender(value as Gender)} value={gender} disabled={isUserLoading || isSaving}>
+            <Select onValueChange={(value) => setGender(value as Gender)} value={gender} disabled={isLoading || isSaving}>
               <SelectTrigger id="gender">
                 <SelectValue placeholder="Select your gender" />
               </SelectTrigger>
@@ -146,7 +153,7 @@ export default function AccountPage() {
           </div>
         </CardContent>
         <CardFooter className="border-t px-6 py-4">
-          <Button onClick={handleSaveChanges} disabled={isUserLoading || isSaving || !gender}>
+          <Button onClick={handleSaveChanges} disabled={isLoading || isSaving || !gender}>
             {isSaving && <Loader2 className="mr-2 animate-spin" />}
             Save Changes
           </Button>
@@ -170,7 +177,7 @@ export default function AccountPage() {
             </div>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive" disabled={isDeleting}>
+                <Button variant="destructive" disabled={isDeleting || isLoading}>
                   {isDeleting && <Loader2 className="mr-2 animate-spin" />}
                   Delete Account
                 </Button>

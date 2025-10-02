@@ -1,9 +1,8 @@
-
 'use client';
 import { TryOnClient } from '@/components/try-on/try-on-client';
 import { getFitRecommendation } from './actions';
-import { useDoc, useMemoFirebase, useUser } from '@/firebase';
-import { doc, getFirestore } from 'firebase/firestore';
+import { useDoc, useMemoFirebase, useUser, useFirestore } from '@/firebase';
+import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
@@ -12,13 +11,16 @@ import { Button } from '@/components/ui/button';
 
 export default function TryOnPage() {
   const { user, isUserLoading } = useUser();
-  const userProfileRef = useMemoFirebase(
-    () => (user ? doc(getFirestore(), 'users', user.uid) : null),
-    [user]
-  );
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
+  const firestore = useFirestore();
 
-  const isLoading = isUserLoading || isProfileLoading;
+  const userProfileRef = useMemoFirebase(
+    () => (user ? doc(firestore, 'users', user.uid) : null),
+    [user, firestore]
+  );
+  // No need to listen, one-time fetch is sufficient for this page
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef, { listen: false });
+
+  const isLoading = isUserLoading || (user && isProfileLoading);
   
   const userClientData = userProfile ? {
     avatarUrl: userProfile.avatarUrl,

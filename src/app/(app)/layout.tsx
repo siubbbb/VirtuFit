@@ -64,7 +64,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [isUserLoading, user, router]);
 
   const handleSignOut = async () => {
-    await auth.signOut();
+    if (auth) {
+      await auth.signOut();
+    }
     router.push('/');
   }
 
@@ -73,7 +75,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return email[0].toUpperCase();
   }
   
-  if (!user) {
+  if (isUserLoading || !user) {
      return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-background">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />

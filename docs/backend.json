@@ -15,32 +15,33 @@
           "description": "User's email address.",
           "format": "email"
         },
-        "gender": {
+        "displayName": {
           "type": "string",
-          "description": "User's selected gender.",
-          "enum": ["male", "female", "other"]
+          "description": "User's display name."
         },
         "avatarUrl": {
           "type": "string",
           "description": "URL of the user's avatar image.",
           "format": "uri"
         },
-        "creationDate": {
+        "createdAt": {
           "type": "string",
-          "description": "Date and time when the user profile was created.",
+          "description": "Timestamp indicating when the user profile was created.",
           "format": "date-time"
         }
       },
       "required": [
         "id",
-        "email"
+        "email",
+        "displayName",
+        "createdAt"
       ]
     },
     "BodyMeasurement": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "BodyMeasurement",
       "type": "object",
-      "description": "Represents a set of body measurements for a user at a specific point in time.",
+      "description": "Represents a user's body measurements extracted from images.",
       "properties": {
         "id": {
           "type": "string",
@@ -50,35 +51,37 @@
           "type": "string",
           "description": "Reference to UserProfile. (Relationship: UserProfile 1:N BodyMeasurement)"
         },
-        "measurementDate": {
-          "type": "string",
-          "description": "Date and time when the body measurements were taken.",
-          "format": "date-time"
-        },
-        "heightCm": {
+        "height": {
           "type": "number",
           "description": "User's height in centimeters."
         },
-        "weightKg": {
+        "weight": {
           "type": "number",
           "description": "User's weight in kilograms."
         },
-        "chestCircumferenceCm": {
+        "chest": {
           "type": "number",
           "description": "User's chest circumference in centimeters."
         },
-        "waistCircumferenceCm": {
+        "waist": {
           "type": "number",
           "description": "User's waist circumference in centimeters."
         },
-        "hipCircumferenceCm": {
+        "hip": {
           "type": "number",
           "description": "User's hip circumference in centimeters."
+        },
+        "measurementDate": {
+          "type": "string",
+          "description": "Date when the measurements were taken.",
+          "format": "date-time"
         }
       },
       "required": [
         "id",
         "userId",
+        "height",
+        "weight",
         "measurementDate"
       ]
     },
@@ -86,7 +89,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Avatar",
       "type": "object",
-      "description": "Represents a 2D avatar generated for a user.",
+      "description": "Represents a user's 2D avatar.",
       "properties": {
         "id": {
           "type": "string",
@@ -96,21 +99,22 @@
           "type": "string",
           "description": "Reference to UserProfile. (Relationship: UserProfile 1:N Avatar)"
         },
-        "avatarUrl": {
+        "imageUrl": {
           "type": "string",
           "description": "URL of the avatar image.",
           "format": "uri"
         },
         "generationDate": {
           "type": "string",
-          "description": "Date and time when the avatar was generated.",
+          "description": "Date when the avatar was generated.",
           "format": "date-time"
         }
       },
       "required": [
         "id",
         "userId",
-        "avatarUrl"
+        "imageUrl",
+        "generationDate"
       ]
     },
     "Garment": {
@@ -153,7 +157,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "SizeChart",
       "type": "object",
-      "description": "Represents a size chart for a specific brand and garment type.",
+      "description": "Represents a size chart for a specific garment brand.",
       "properties": {
         "id": {
           "type": "string",
@@ -163,76 +167,82 @@
           "type": "string",
           "description": "Brand associated with the size chart."
         },
-        "garmentType": {
-          "type": "string",
-          "description": "Type of garment the size chart applies to (e.g., shirt, pants)."
-        },
         "sizes": {
           "type": "array",
-          "description": "An array of available sizes for the garment",
+          "description": "An array of available sizes.",
           "items": {
             "type": "string"
           }
         },
-        "measurements": {
+        "chestMeasurements": {
           "type": "array",
-          "description": "Measurements for each size.",
+          "description": "Array of chest measurements corresponding to each size in centimeters.",
           "items": {
-            "type": "string"
+            "type": "number"
+          }
+        },
+        "waistMeasurements": {
+          "type": "array",
+          "description": "Array of waist measurements corresponding to each size in centimeters.",
+          "items": {
+            "type": "number"
           }
         }
       },
       "required": [
         "id",
         "brand",
-        "garmentType"
+        "sizes",
+        "chestMeasurements",
+        "waistMeasurements"
       ]
     },
-    "VirtualTryOnSession": {
+    "FitRecommendation": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "VirtualTryOnSession",
+      "title": "FitRecommendation",
       "type": "object",
-      "description": "Represents a virtual try-on session for a user.",
+      "description": "Represents a fit recommendation for a garment size based on user measurements.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the virtual try-on session."
+          "description": "Unique identifier for the fit recommendation."
         },
         "userId": {
           "type": "string",
-          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N VirtualTryOnSession)"
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N FitRecommendation)"
         },
         "garmentId": {
           "type": "string",
-          "description": "Reference to Garment. (Relationship: Garment 1:N VirtualTryOnSession)"
+          "description": "Reference to Garment. (Relationship: Garment 1:N FitRecommendation)"
         },
-        "selectedSize": {
+        "size": {
           "type": "string",
-          "description": "The size selected by the user for the try-on."
+          "description": "Recommended size for the garment."
         },
-        "tryOnDate": {
+        "fitScore": {
+          "type": "number",
+          "description": "A score indicating the goodness of fit for the recommended size."
+        },
+        "recommendationDate": {
           "type": "string",
-          "description": "Date and time when the try-on session occurred.",
+          "description": "Date when the fit recommendation was generated.",
           "format": "date-time"
-        },
-        "resultImageUrl": {
-          "type": "string",
-          "description": "URL of the resulting image from the virtual try-on.",
-          "format": "uri"
         }
       },
       "required": [
         "id",
         "userId",
         "garmentId",
-        "selectedSize",
-        "tryOnDate"
+        "size",
+        "fitScore",
+        "recommendationDate"
       ]
     }
   },
   "auth": {
     "providers": [
-      "password"
+      "password",
+      "anonymous"
     ]
   },
   "firestore": {
@@ -244,11 +254,11 @@
           "schema": {
             "$ref": "#/backend/entities/UserProfile"
           },
-          "description": "Stores user profile information. Uses path-based ownership for simplified security rules.",
+          "description": "Stores user profile information. The 'userId' parameter represents the unique identifier for each user.",
           "params": [
             {
               "name": "userId",
-              "description": "The unique identifier for the user."
+              "description": "Unique identifier for the user."
             }
           ]
         }
@@ -260,15 +270,15 @@
           "schema": {
             "$ref": "#/backend/entities/BodyMeasurement"
           },
-          "description": "Stores body measurement data for a specific user. Uses path-based ownership for simplified security rules.",
+          "description": "Stores body measurements for a specific user. Includes denormalized 'userId' for authorization independence.",
           "params": [
             {
               "name": "userId",
-              "description": "The unique identifier for the user."
+              "description": "Unique identifier for the user."
             },
             {
               "name": "bodyMeasurementId",
-              "description": "The unique identifier for the body measurement record."
+              "description": "Unique identifier for the body measurement record."
             }
           ]
         }
@@ -280,15 +290,35 @@
           "schema": {
             "$ref": "#/backend/entities/Avatar"
           },
-          "description": "Stores avatar data for a specific user. Uses path-based ownership for simplified security rules.",
+          "description": "Stores avatars for a specific user. Includes denormalized 'userId' for authorization independence.",
           "params": [
             {
               "name": "userId",
-              "description": "The unique identifier for the user."
+              "description": "Unique identifier for the user."
             },
             {
               "name": "avatarId",
-              "description": "The unique identifier for the avatar."
+              "description": "Unique identifier for the avatar."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/fitRecommendations/{fitRecommendationId}",
+        "definition": {
+          "entityName": "FitRecommendation",
+          "schema": {
+            "$ref": "#/backend/entities/FitRecommendation"
+          },
+          "description": "Stores fit recommendations for a specific user. Includes denormalized 'userId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "Unique identifier for the user."
+            },
+            {
+              "name": "fitRecommendationId",
+              "description": "Unique identifier for the fit recommendation."
             }
           ]
         }
@@ -300,11 +330,11 @@
           "schema": {
             "$ref": "#/backend/entities/Garment"
           },
-          "description": "Stores garment information.  Garments are globally accessible, simplifying security rules and enabling listing.",
+          "description": "Stores garment information.",
           "params": [
             {
               "name": "garmentId",
-              "description": "The unique identifier for the garment."
+              "description": "Unique identifier for the garment."
             }
           ]
         }
@@ -316,36 +346,16 @@
           "schema": {
             "$ref": "#/backend/entities/SizeChart"
           },
-          "description": "Stores size chart data. Size charts are globally accessible, simplifying security rules and enabling listing.",
+          "description": "Stores size chart information.",
           "params": [
             {
               "name": "sizeChartId",
-              "description": "The unique identifier for the size chart."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/virtualTryOnSessions/{virtualTryOnSessionId}",
-        "definition": {
-          "entityName": "VirtualTryOnSession",
-          "schema": {
-            "$ref": "#/backend/entities/VirtualTryOnSession"
-          },
-          "description": "Stores virtual try-on session data for a specific user. Uses path-based ownership for simplified security rules.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier for the user."
-            },
-            {
-              "name": "virtualTryOnSessionId",
-              "description": "The unique identifier for the virtual try-on session."
+              "description": "Unique identifier for the size chart."
             }
           ]
         }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to prioritize security, scalability, and debuggability, adhering to the principles of Authorization Independence and Structural Segregation. User profiles and associated data are stored in a hierarchical structure under the `/users/{userId}` collection, enabling simple path-based security rules for ownership. Garments and SizeCharts are stored in separate collections, ensuring a homogeneous security posture since they do not have the same access requirements as user-specific data. Virtual Try-On Sessions are also stored under each user to maintain the integrity of ownership."
+    "reasoning": "The Firestore structure is designed to ensure Authorization Independence, DBAC, and QAPs. User profiles and their associated data (BodyMeasurements, Avatars, and FitRecommendations) are stored under the `/users/{userId}` path, providing clear ownership and simplifying security rules. Garments and SizeCharts are stored in separate top-level collections to allow for easier management and querying. The 'userId' is denormalized into the BodyMeasurement, Avatar and FitRecommendation documents to ensure authorization independence, preventing the need for `get()` calls in security rules to verify ownership.\n\nThis design achieves Authorization Independence by denormalizing the `userId` into the BodyMeasurement, Avatar and FitRecommendation collections. This eliminates the need for complex `get()` calls in security rules to verify ownership, allowing for atomic operations. It supports the required QAPs by using hierarchical paths for user-owned data, which simplifies secure list operations."
   }
 }

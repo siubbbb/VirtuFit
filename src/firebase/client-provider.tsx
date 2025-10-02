@@ -22,7 +22,8 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
 
 
     if (!firebaseServices) {
-        // You can render a loader here if you want
+        // Render nothing on the server and during the initial client-side render.
+        // This prevents hydration mismatches.
         return null; 
     }
 

@@ -18,7 +18,6 @@ export default function DashboardPage() {
       () => (user ? doc(firestore, 'users', user.uid) : null),
       [user, firestore]
     );
-    // Fetch profile once, no need to listen for this static data on dashboard
     const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef, { listen: false });
 
     const avatarPlaceholder = PlaceHolderImages.find(img => img.id === 'avatar-placeholder');

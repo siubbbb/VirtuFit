@@ -17,7 +17,6 @@ export default function TryOnPage() {
     () => (user ? doc(firestore, 'users', user.uid) : null),
     [user, firestore]
   );
-  // No need to listen, one-time fetch is sufficient for this page
   const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef, { listen: false });
 
   const isLoading = isUserLoading || (user && isProfileLoading);

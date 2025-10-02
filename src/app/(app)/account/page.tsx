@@ -29,9 +29,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Separator } from '@/components/ui/separator';
-import { useUser, setDocumentNonBlocking, useFirestore } from '@/firebase';
+import { useUser, setDocumentNonBlocking, useFirestore, useMemoFirebase, useDoc } from '@/firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useTransition, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -48,9 +48,7 @@ export default function AccountPage() {
   const [isSaving, startSaveTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
 
-  // We can't get user data from the useUser hook directly, need to fetch from firestore
-  const userProfileRef = useMemo(() => (user ? doc(firestore, 'users', user.uid) : null), [user, firestore]);
-  // Not listening here, just a one-time fetch is enough for the account page
+  const userProfileRef = useMemoFirebase(() => (user ? doc(firestore, 'users', user.uid) : null), [user, firestore]);
   const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef, { listen: false });
 
   useEffect(() => {
@@ -63,7 +61,6 @@ export default function AccountPage() {
     if (!user || !gender) return;
     startSaveTransition(async () => {
       try {
-        // Update Firestore profile
         const userDocRef = doc(firestore, 'users', user.uid);
         setDocumentNonBlocking(userDocRef, { gender }, { merge: true });
 
@@ -86,11 +83,9 @@ export default function AccountPage() {
     if (!user) return;
     startDeleteTransition(async () => {
       try {
-        // Delete Firestore data first
         const userDocRef = doc(firestore, 'users', user.uid);
         await deleteDoc(userDocRef);
 
-        // Then delete the user from Auth
         await user.delete();
         
         toast({

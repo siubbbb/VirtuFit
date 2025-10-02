@@ -18,7 +18,7 @@
         "gender": {
           "type": "string",
           "description": "User's selected gender.",
-          "enum": ["male", "female", "other", "prefer_not_to_say"]
+          "enum": ["male", "female", "other"]
         },
         "avatarUrl": {
           "type": "string",
@@ -156,7 +156,7 @@
       "description": "Represents a size chart for a specific brand and garment type.",
       "properties": {
         "id": {
-          "type": "string",_
+          "type": "string",
           "description": "Unique identifier for the size chart."
         },
         "brand": {

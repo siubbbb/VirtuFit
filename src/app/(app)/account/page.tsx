@@ -36,7 +36,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-type Gender = "male" | "female" | "other" | "prefer_not_to_say";
+type Gender = "male" | "female" | "other";
 
 export default function AccountPage() {
   const { user, isUserLoading } = useUser();
@@ -133,7 +133,6 @@ export default function AccountPage() {
                 <SelectItem value="male">Male</SelectItem>
                 <SelectItem value="female">Female</SelectItem>
                 <SelectItem value="other">Other</SelectItem>
-                <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -158,9 +157,9 @@ export default function AccountPage() {
       
       <Card className="border-destructive shadow-lg">
         <CardHeader>
-          <CardTitle>Danger Zone</CardTitle>
+          <CardTitle>Privacy</CardTitle>
           <CardDescription>
-            These actions are permanent and cannot be undone.
+            Your privacy is kept secure. Account deletion is permanent and cannot be undone.
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -33,18 +33,6 @@ export async function generateAvatar(input: GenerateAvatarInput): Promise<Genera
   return generateAvatarFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'generateAvatarPrompt',
-  input: {schema: GenerateAvatarInputSchema},
-  output: {schema: GenerateAvatarOutputSchema},
-  prompt: `You are an AI avatar generator. You will generate a 2D avatar from the user's photo.
-
-  Photo: {{media url=photoDataUri}}
-
-  Please generate a front-facing 2D avatar that matches the user’s body shape based on the uploaded photo. The avatar should be a data URI.
-  `,
-});
-
 const generateAvatarFlow = ai.defineFlow(
   {
     name: 'generateAvatarFlow',
@@ -52,19 +40,24 @@ const generateAvatarFlow = ai.defineFlow(
     outputSchema: GenerateAvatarOutputSchema,
   },
   async input => {
-    const {media} = await ai.generate({
-      model: 'googleai/gemini-2.5-flash-image-preview',
+    // Using gemini-pro-vision as an alternative to avoid rate-limiting on flash-image-preview
+    const {output} = await ai.generate({
+      model: 'googleai/gemini-pro-vision',
       prompt: [
         {media: {url: input.photoDataUri}},
-        {text: 'generate a 2D avatar of this person'},
+        {text: 'From the attached image, generate a simple, front-facing 2D vector-style avatar that captures the body shape of the person. The background should be transparent. Do not include any text or other elements. Output the image directly.'},
       ],
-      config: {
-        responseModalities: ['TEXT', 'IMAGE'], // MUST provide both TEXT and IMAGE, IMAGE only won't work
-      },
     });
 
+    // gemini-pro-vision might return the image within the output parts.
+    const imagePart = output.parts.find(part => part.media);
+
+    if (!imagePart || !imagePart.media) {
+        throw new Error("Avatar image could not be generated.");
+    }
+
     return {
-      avatarDataUri: media!.url,
+      avatarDataUri: imagePart.media.url,
     };
   }
 );

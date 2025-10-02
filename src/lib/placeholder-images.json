@@ -1,3 +1,28 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "avatar-placeholder",
+      "description": "A placeholder for the user's generated 2D avatar.",
+      "imageUrl": "https://images.unsplash.com/photo-1576348076752-6085814e5a51?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8ZmFzaGlvbiUyMGF2YXRhcnxlbnwwfHx8fDE3NTkzNjY1NDF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "fashion avatar"
+    },
+    {
+      "id": "uniqlo-shirt",
+      "description": "A white UNIQLO Airism crew neck t-shirt.",
+      "imageUrl": "https://images.unsplash.com/photo-1581655353564-df123a1eb820?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx3aGl0ZSUyMHRzaGlydHxlbnwwfHx8fDE3NTkzMzQ5NTN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "white tshirt"
+    },
+    {
+      "id": "jeans",
+      "description": "A pair of classic blue denim jeans.",
+      "imageUrl": "https://images.unsplash.com/photo-1714143136372-ddaf8b606da7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxibHVlJTIwamVhbnN8ZW58MHx8fHwxNzU5MzE0MzMwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "blue jeans"
+    },
+    {
+      "id": "summer-dress",
+      "description": "A floral summer dress.",
+      "imageUrl": "https://images.unsplash.com/photo-1520026582657-4daf5bb60adb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxzdW1tZXIlMjBkcmVzc3xlbnwwfHx8fDE3NTkyOTc3ODJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "summer dress"
+    }
+  ]
 }

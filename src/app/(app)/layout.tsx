@@ -42,6 +42,7 @@ import {
 import { useUser, useAuth } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
 
 const menuItems = [
@@ -56,14 +57,29 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
   const router = useRouter();
 
+  React.useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/');
+    }
+  }, [isUserLoading, user, router]);
+
   const handleSignOut = async () => {
     await auth.signOut();
     router.push('/');
   }
 
-  const getInitials = (name: string | null | undefined) => {
-    if (!name) return 'U';
-    return name.split(' ').map(n => n[0]).join('');
+  const getInitials = (email: string | null | undefined) => {
+    if (!email) return 'U';
+    return email[0].toUpperCase();
+  }
+  
+  if (isUserLoading || !user) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="mt-4 text-muted-foreground">Loading...</p>
+      </div>
+    );
   }
 
   return (
@@ -98,35 +114,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="justify-start gap-2 w-full p-2 h-auto">
-                        {isUserLoading ? (
-                          <>
-                            <Skeleton className="h-8 w-8 rounded-full" />
-                            <div className="space-y-2 group-data-[collapsible=icon]:hidden">
-                               <Skeleton className="h-4 w-20" />
-                               <Skeleton className="h-3 w-28" />
-                            </div>
-                          </>
-                        ) : user ? (
-                          <>
-                            <Avatar className="h-8 w-8">
-                                <AvatarImage src={user.photoURL ?? ''} alt={user.displayName ?? 'User'} />
-                                <AvatarFallback>{getInitials(user.displayName)}</AvatarFallback>
-                            </Avatar>
-                            <div className="text-left group-data-[collapsible=icon]:hidden">
-                                <p className="font-medium text-sm text-foreground truncate">User</p>
-                                <p className="text-xs text-muted-foreground truncate">{user.email || 'No email'}</p>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <Avatar className="h-8 w-8">
-                                <AvatarFallback>U</AvatarFallback>
-                            </Avatar>
-                             <div className="text-left group-data-[collapsible=icon]:hidden">
-                                <p className="font-medium text-sm text-foreground">Not signed in</p>
-                            </div>
-                          </>
-                        )}
+                        <Avatar className="h-8 w-8">
+                            <AvatarImage src={user.photoURL ?? ''} alt={user.email ?? 'User'} />
+                            <AvatarFallback>{getInitials(user.email)}</AvatarFallback>
+                        </Avatar>
+                        <div className="text-left group-data-[collapsible=icon]:hidden">
+                            <p className="font-medium text-sm text-foreground truncate">{user.email}</p>
+                        </div>
                         
                         <ChevronDown className="ml-auto h-4 w-4 group-data-[collapsible=icon]:hidden" />
                     </Button>
@@ -135,12 +129,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                      <DropdownMenuLabel className="font-normal">
                         <div className="flex flex-col space-y-1">
                             {user && (
-                              <>
-                                <p className="text-sm font-medium leading-none">User</p>
                                 <p className="text-xs leading-none text-muted-foreground">
-                                {user.email || 'No email'}
+                                {user.email}
                                 </p>
-                              </>
                             )}
                         </div>
                     </DropdownMenuLabel>

@@ -4,7 +4,7 @@ import QRCode from 'qrcode.react';
 import { useUser, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, getFirestore } from 'firebase/firestore';
 import { Smartphone, CheckCircle, Loader2 } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '../ui/skeleton';
 

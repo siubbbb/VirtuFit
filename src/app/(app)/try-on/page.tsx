@@ -1,22 +1,14 @@
+'use client';
 import { TryOnClient } from '@/components/try-on/try-on-client';
 import { recommendFit } from '@/ai/flows/recommend-fit';
 import { BRAND_SIZE_CHARTS } from '@/lib/constants';
-
-// Mock fetching user data. In a real app, this would come from your database.
-async function getUserData() {
-  return {
-    name: 'Alex',
-    avatarUrl: 'https://picsum.photos/seed/user-avatar-generated/800/1000',
-    measurements: {
-      chest: 100,
-      waist: 84,
-      hip: 102,
-      inseam: 81,
-      bust: 96,
-      length: 69
-    },
-  };
-}
+import { useDoc, useMemoFirebase, useUser } from '@/firebase';
+import { doc, getFirestore } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 async function getFitRecommendation(userMeasurements: Record<string, number>, garmentId: string) {
   'use server';
@@ -41,8 +33,21 @@ async function getFitRecommendation(userMeasurements: Record<string, number>, ga
   }
 }
 
-export default async function TryOnPage() {
-  const user = await getUserData();
+export default function TryOnPage() {
+  const { user, isUserLoading } = useUser();
+  const userProfileRef = useMemoFirebase(
+    () => (user ? doc(getFirestore(), 'users', user.uid) : null),
+    [user]
+  );
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
+
+  const isLoading = isUserLoading || isProfileLoading;
+  
+  const userClientData = userProfile ? {
+    name: userProfile.displayName,
+    avatarUrl: userProfile.avatarUrl,
+    measurements: userProfile.measurements,
+  } : null;
 
   return (
     <div>
@@ -52,10 +57,32 @@ export default async function TryOnPage() {
           See how garments fit on your personalized avatar and get expert size recommendations.
         </p>
       </header>
-      <TryOnClient
-        user={user}
-        getFitRecommendationAction={getFitRecommendation}
-      />
+      
+      {isLoading && (
+        <div className="space-y-4">
+            <Skeleton className="h-[70vh] w-full" />
+        </div>
+      )}
+
+      {!isLoading && !userClientData?.avatarUrl && (
+        <Alert variant="destructive" className="max-w-xl mx-auto">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>No Avatar Found</AlertTitle>
+          <AlertDescription>
+            You need to create an avatar before you can use the virtual try-on feature.
+            <Button asChild className="mt-4">
+              <Link href="/capture">Create Your Avatar</Link>
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {!isLoading && userClientData?.avatarUrl && (
+        <TryOnClient
+          user={userClientData}
+          getFitRecommendationAction={getFitRecommendation}
+        />
+      )}
     </div>
   );
 }

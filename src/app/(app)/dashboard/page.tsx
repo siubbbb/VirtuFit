@@ -1,39 +1,43 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, ScanLine } from 'lucide-react';
+import { ArrowRight, ScanLine, Loader2 } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useUser, useDoc, useMemoFirebase } from '@/firebase';
+import { doc, getFirestore } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
-// In a real app, this would be fetched from your database (e.g., Firestore)
-async function getUserData() {
-  // Simulate fetching user data. We'll alternate between having an avatar and not.
-  const hasAvatar = Math.random() > 0.5;
-  
-  if (hasAvatar) {
-    return {
-      name: 'Alex',
-      avatarUrl: 'https://picsum.photos/seed/user-avatar-generated/800/1000',
-    };
-  }
-  return {
-    name: 'Alex',
-    avatarUrl: null,
-  };
-}
+export default function DashboardPage() {
+    const { user, isUserLoading } = useUser();
 
+    const userProfileRef = useMemoFirebase(
+      () => (user ? doc(getFirestore(), 'users', user.uid) : null),
+      [user]
+    );
+    const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
 
-export default async function DashboardPage() {
-    const user = await getUserData();
     const avatarPlaceholder = PlaceHolderImages.find(img => img.id === 'avatar-placeholder');
-
-    const hasAvatar = user.avatarUrl !== null;
+    const isLoading = isUserLoading || isProfileLoading;
+    const hasAvatar = userProfile?.avatarUrl;
+    const avatarUrl = hasAvatar ? userProfile.avatarUrl : avatarPlaceholder?.imageUrl;
 
   return (
     <div className="flex flex-col gap-8">
         <header>
-            <h1 className="text-3xl font-bold text-foreground font-headline">Welcome back, {user.name}!</h1>
-            <p className="text-muted-foreground mt-1">Ready to find your perfect fit?</p>
+           {isLoading ? (
+             <div className="space-y-2">
+                <Skeleton className="h-8 w-1/2" />
+                <Skeleton className="h-4 w-1/3" />
+             </div>
+           ) : (
+             <>
+                <h1 className="text-3xl font-bold text-foreground font-headline">Welcome back, {user?.displayName || 'VirtuFit User'}!</h1>
+                <p className="text-muted-foreground mt-1">Ready to find your perfect fit?</p>
+             </>
+           )}
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -45,20 +49,26 @@ export default async function DashboardPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex-grow flex items-center justify-center">
-                    <div className="relative w-full max-w-sm aspect-[4/5] rounded-lg overflow-hidden bg-muted">
-                        <Image 
-                            src={hasAvatar ? user.avatarUrl! : avatarPlaceholder!.imageUrl} 
-                            alt={hasAvatar ? "User's 2D avatar" : "Avatar placeholder"}
-                            fill
-                            className="object-contain"
-                            data-ai-hint={hasAvatar ? "fashion avatar" : avatarPlaceholder!.imageHint}
-                        />
-                        {!hasAvatar && (
-                            <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                                <ScanLine className="w-16 h-16 text-white/50" />
-                            </div>
-                        )}
-                    </div>
+                    {isLoading ? (
+                        <Skeleton className="w-full max-w-sm aspect-[4/5] rounded-lg" />
+                    ) : (
+                        <div className="relative w-full max-w-sm aspect-[4/5] rounded-lg overflow-hidden bg-muted">
+                            {avatarUrl && (
+                              <Image 
+                                  src={avatarUrl}
+                                  alt={hasAvatar ? "User's 2D avatar" : "Avatar placeholder"}
+                                  fill
+                                  className="object-contain"
+                                  data-ai-hint={hasAvatar ? "fashion avatar" : avatarPlaceholder?.imageHint}
+                              />
+                            )}
+                            {!hasAvatar && (
+                                <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                    <ScanLine className="w-16 h-16 text-white/50" />
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </CardContent>
                 <CardFooter>
                      {hasAvatar ? (
@@ -68,9 +78,10 @@ export default async function DashboardPage() {
                             </Link>
                         </Button>
                      ) : (
-                        <Button asChild className="w-full md:w-auto" size="lg">
+                        <Button asChild className="w-full md:w-auto" size="lg" disabled={isLoading}>
                              <Link href="/capture">
-                                Get Measured Now <ArrowRight className="ml-2"/>
+                                {isLoading ? <Loader2 className="mr-2 animate-spin"/> : 'Get Measured Now'}
+                                {!isLoading && <ArrowRight className="ml-2"/>}
                             </Link>
                         </Button>
                      )}
@@ -84,8 +95,8 @@ export default async function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <ol className="list-decimal list-inside space-y-3 text-sm text-muted-foreground">
-                            <li><strong>Capture:</strong> Take two photos using our guided process.</li>
-                            <li><strong>Measure:</strong> Our AI analyzes your photos to extract key body measurements.</li>
+                            <li><strong>Capture:</strong> Take a photo using our guided process.</li>
+                            <li><strong>Measure & Avatar:</strong> Our AI analyzes your photo to extract key body measurements and create an avatar.</li>
                             <li><strong>Try-On:</strong> See how clothes fit on your personalized 2D avatar.</li>
                             <li><strong>Recommend:</strong> Get AI-powered size recommendations for any garment.</li>
                         </ol>

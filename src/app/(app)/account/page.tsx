@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Card,
   CardContent,
@@ -21,14 +23,86 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Separator } from '@/components/ui/separator';
-
-// Mock user data
-const user = {
-  email: 'user@example.com',
-  name: 'Alex Doe',
-};
+import { useUser, useAuth, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
+import { doc, deleteDoc, getFirestore } from 'firebase/firestore';
+import { useState, useEffect, useTransition } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { updateProfile } from 'firebase/auth';
+import { Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function AccountPage() {
+  const { user, isUserLoading } = useUser();
+  const auth = useAuth();
+  const firestore = getFirestore();
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const [displayName, setDisplayName] = useState('');
+  const [isSaving, startSaveTransition] = useTransition();
+  const [isDeleting, startDeleteTransition] = useTransition();
+
+  useEffect(() => {
+    if (user) {
+      setDisplayName(user.displayName || '');
+    }
+  }, [user]);
+
+  const handleSaveChanges = () => {
+    if (!user) return;
+    startSaveTransition(async () => {
+      try {
+        // Update Firebase Auth profile
+        await updateProfile(user, { displayName });
+
+        // Update Firestore profile
+        const userDocRef = doc(firestore, 'users', user.uid);
+        setDocumentNonBlocking(userDocRef, { displayName }, { merge: true });
+
+        toast({
+          title: 'Success!',
+          description: 'Your profile has been updated.',
+        });
+      } catch (error) {
+        console.error('Error updating profile:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Uh oh!',
+          description: 'Could not save your changes. Please try again.',
+        });
+      }
+    });
+  };
+
+  const handleDeleteAccount = () => {
+    if (!user) return;
+    startDeleteTransition(async () => {
+      try {
+        // Delete Firestore data first
+        const userDocRef = doc(firestore, 'users', user.uid);
+        await deleteDoc(userDocRef); // Use await here for sequential deletion
+
+        // Then delete the user from Auth
+        await user.delete();
+        
+        toast({
+          title: 'Account Deleted',
+          description: 'Your account and all data have been permanently removed.',
+        });
+        
+        router.push('/');
+
+      } catch (error: any) {
+        console.error('Error deleting account:', error);
+         toast({
+          variant: 'destructive',
+          title: 'Error Deleting Account',
+          description: error.message || 'An unexpected error occurred.',
+        });
+      }
+    });
+  };
+
   return (
     <div className="max-w-2xl mx-auto">
       <header className="mb-8">
@@ -48,15 +122,18 @@ export default function AccountPage() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
-            <Input id="name" defaultValue={user.name} />
+            <Input id="name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} disabled={isUserLoading || isSaving} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" defaultValue={user.email} disabled />
+            <Input id="email" type="email" value={user?.email || ''} disabled />
           </div>
         </CardContent>
         <CardFooter className="border-t px-6 py-4">
-          <Button>Save Changes</Button>
+          <Button onClick={handleSaveChanges} disabled={isUserLoading || isSaving}>
+            {isSaving && <Loader2 className="mr-2 animate-spin" />}
+            Save Changes
+          </Button>
         </CardFooter>
       </Card>
       
@@ -77,7 +154,10 @@ export default function AccountPage() {
             </div>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive">Delete Account</Button>
+                <Button variant="destructive" disabled={isDeleting}>
+                  {isDeleting && <Loader2 className="mr-2 animate-spin" />}
+                  Delete Account
+                </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
@@ -90,8 +170,12 @@ export default function AccountPage() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction className="bg-destructive hover:bg-destructive/90">
-                    Yes, delete my account
+                  <AlertDialogAction 
+                    onClick={handleDeleteAccount}
+                    className="bg-destructive hover:bg-destructive/90"
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? 'Deleting...' : 'Yes, delete my account'}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
